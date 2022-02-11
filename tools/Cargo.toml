@@ -1,0 +1,29 @@
+[package]
+name = "tools"
+version = "0.1.0"
+edition = "2021"
+authors = [
+  "Emilio Cobos Álvarez <emilio@crisal.io>",
+]
+
+[dependencies]
+origin-trial-token = { path = "../src" }
+clap = { version = "3.0.14", features = ["derive"] }
+chrono = "0.4"
+base64 = "0.13"
+ring = "0.16"
+pem = "0.8"
+asn1 = "0.8"
+
+[[bin]]
+name = "mktoken"
+path = "mktoken.rs"
+
+[[bin]]
+name = "verify"
+path = "verify.rs"
+
+[[bin]]
+name = "dump"
+path = "dump.rs"
+

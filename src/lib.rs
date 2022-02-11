@@ -1,5 +1,8 @@
 //! Implements a simple processor for
 //! https://github.com/chromium/chromium/blob/d7da0240cae77824d1eda25745c4022757499131/third_party/blink/public/common/origin_trials/origin_trials_token_structure.md
+//!
+//! This crate intentionally leaves the cryptography to the caller. See the
+//! tools/ directory for example usages.
 
 /// Latest version as documented.
 pub const LATEST_VERSION: u8 = 3;
