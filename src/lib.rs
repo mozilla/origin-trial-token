@@ -215,14 +215,26 @@ impl Token {
         RawToken::raw_signature_data(LATEST_VERSION, &self.to_payload())
     }
 
+    /// Turns the token into a fully signed token.
     pub fn to_signed_token(&self, sign: impl FnOnce(&[u8]) -> [u8; 64]) -> Vec<u8> {
-        let payload = self.to_payload();
+        self.to_signed_token_with_payload(sign, &self.to_payload())
+    }
+
+    /// DO NOT EXPOSE: This is intended for testing only. We need to test with
+    /// the original payload so that the tokens match, but we assert
+    /// that self.to_payload() and payload are equivalent.
+    fn to_signed_token_with_payload(
+        &self,
+        sign: impl FnOnce(&[u8]) -> [u8; 64],
+        payload: &[u8],
+    ) -> Vec<u8> {
         let signature_data_with_payload = RawToken::raw_signature_data(LATEST_VERSION, &payload);
         let signature = sign(&signature_data_with_payload);
 
-        let mut buffer = Vec::with_capacity(1 + signature.len() + payload.len());
+        let mut buffer = Vec::with_capacity(1 + signature.len() + 4 + payload.len());
         buffer.push(LATEST_VERSION);
         buffer.extend(signature);
+        buffer.extend((payload.len() as u32).to_be_bytes());
         buffer.extend(payload);
 
         if cfg!(debug_assertions) {
