@@ -24,16 +24,16 @@ fn main() {
     println!("// {:?} public key", key.kind);
 
     if args.c {
-        print!("static const unsigned char key[32] = {{");
+        print!("static const unsigned char key[{}] = {{", key.bytes.len());
     } else {
-        print!("const KEY: [u8; 32] = [");
+        print!("const KEY: [u8; {}] = [", key.bytes.len());
     }
     for byte in key.bytes.iter() {
         print!(" {:x},", byte);
     }
     if args.c {
-        println!("}};");
+        println!(" }};");
     } else {
-        println!("];");
+        println!(" ];");
     }
 }
