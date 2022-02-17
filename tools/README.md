@@ -1,8 +1,18 @@
 ## Create a key pair
 
+For ED25519 (the original Chrome format):
+
 ```
-$ openssl genpkey -algorithm ED25519 > /path/to/private-key
-$ openssl pkey -in /path/to/private-key -pubout > /path/to/public-key
+$ openssl genpkey -algorithm ED25519 > /path/to/private-key.pem
+$ openssl pkey -in /path/to/private-key -pubout > /path/to/public-key.pem
+```
+
+For ECDSA with P-256:
+
+```
+$ openssl ecparam -genkey -name prime256v1 -out /path/to/private-key.pem
+$ openssl ec -in /path/to/private-key -pubout -out /path/to/public-key.pem
+$ openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in /path/to/private-key.pem -out /path/to/private-key.pkcs8.pem
 ```
 
 ### Dump it for C or Rust as needed

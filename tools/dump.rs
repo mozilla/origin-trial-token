@@ -21,12 +21,14 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let key = utils::read_public_key(&args.public_key);
+    println!("// {:?} public key", key.kind);
+
     if args.c {
         print!("static const unsigned char key[32] = {{");
     } else {
         print!("const KEY: [u8; 32] = [");
     }
-    for byte in key.iter() {
+    for byte in key.bytes.iter() {
         print!(" {:x},", byte);
     }
     if args.c {

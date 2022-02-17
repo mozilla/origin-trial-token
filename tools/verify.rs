@@ -24,9 +24,17 @@ fn verify_data(public_key: Option<&std::path::Path>, signature: &[u8; 64], data:
         Some(path) => path,
         None => return true,
     };
-    let bytes = utils::read_public_key(public_key_path);
-    let public_key = UnparsedPublicKey::new(&signature::ED25519, &bytes);
-    public_key.verify(data, signature).is_ok()
+    let key = utils::read_public_key(public_key_path);
+    match key.kind {
+        utils::PublicKeyKind::Ed25519 => {
+            let public_key = UnparsedPublicKey::new(&signature::ED25519, &key.bytes);
+            public_key.verify(data, signature).is_ok()
+        },
+        utils::PublicKeyKind::EcdsaP256 => {
+            let public_key = UnparsedPublicKey::new(&signature::ECDSA_P256_SHA256_FIXED, &key.bytes);
+            public_key.verify(data, signature).is_ok()
+        }
+    }
 }
 
 fn main() {

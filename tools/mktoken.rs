@@ -13,11 +13,7 @@ struct Args {
     feature: String,
     #[clap(short, long)]
     expiry: String,
-    /// Path to the ed25519 private key, in PEM format, generated with e.g:
-    ///    openssl genpkey -algorithm ED25519 > out
-    ///
-    /// You can then get the public key with:
-    ///    openssl pkey -in out -pubout >out.pub
+    /// Path to the private key, in pkcs8 format, generated as per the readme.
     #[clap(short, long)]
     sign: Option<std::path::PathBuf>,
     #[clap(long)]
@@ -55,11 +51,14 @@ fn sign_data(data: &[u8], key_path: &std::path::Path, _verbose: bool) -> [u8; 64
         .expect("Failed read");
     let pem = pem::parse(&key_pem).expect("Invalid PEM format");
     assert_eq!(pem.tag, "PRIVATE KEY", "Expected private key");
+    let signature = if let Ok(pair) = ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(&pem.contents) {
+        pair.sign(data)
+    } else {
+        let pair = ring::signature::EcdsaKeyPair::from_pkcs8(&ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING, &pem.contents)
+            .expect("Failed to read key");
+        pair.sign(&mut ring::rand::SystemRandom::new(), data).expect("Failed to sign?")
+    };
 
-    let key_pair = ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(&pem.contents)
-        .expect("Failed to read key");
-
-    let signature = key_pair.sign(data);
     let bytes = signature.as_ref();
     assert_eq!(bytes.len(), 64, "Unexpected signature length");
     bytes.try_into().expect("Unexpected signature length")
