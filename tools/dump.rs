@@ -29,7 +29,7 @@ fn main() {
         print!("const KEY: [u8; {}] = [", key.bytes.len());
     }
     for byte in key.bytes.iter() {
-        print!(" {:x},", byte);
+        print!(" 0x{:x},", byte);
     }
     if args.c {
         println!(" }};");
