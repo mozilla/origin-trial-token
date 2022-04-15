@@ -89,6 +89,8 @@ fn sign_data_using_gcloud(data: &[u8], params: &GCloudParams, _verbose: bool) ->
     use std::process::{Command, Stdio};
     use std::io::Write;
 
+    // It's unfortunate that we need this temporary file, see:
+    // https://issuetracker.google.com/229314171
     let mut in_file = tempfile::NamedTempFile::new().expect("Failed to create temp file for signing");
     in_file.write_all(data).expect("Failed to write input data to temp file");
     let in_path = in_file.into_temp_path();
