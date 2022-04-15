@@ -25,5 +25,21 @@ $ dump /path/to/public/key [--c]
 
 ```
 $ mktoken --origin https://foobar.org:345 --feature "foobar" --expiry "$(date --date="09:00 next Fri" -R)" --sign /path/to/private/key
-$ verify <token> test-keys/test.pub
+$ verify <token> -p test-keys/test.pub
+```
+
+## Google Cloud Verification and Signing
+
+See also https://cloud.google.com/kms/docs/create-validate-signatures
+
+```
+$ gcloud auth login
+$ gcloud config set project moz-fx-origin-tr-nonprod-c6af # Or the production one ofc
+$ gcloud kms keys versions get-public-key 1                               \
+    --key origin-trials-dev --keyring origin-trials-dev --location global \
+    --output-file dev.pub # Or the prod ones ofc
+$ mktoken --origin https://foobar.org:345 --feature "foobar"              \
+    --expiry "$(date --date="09:00 next Fri" -R)"                         \
+    --gcloud-sign 1:origin-trials-dev:origin-trials-dev:global
+$ verify <token> -p dev.pub
 ```

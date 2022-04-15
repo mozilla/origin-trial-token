@@ -10,6 +10,7 @@ license = "MPL-2.0"
 [dependencies]
 origin-trial-token = { path = "../src" }
 clap = { version = "3.0.14", features = ["derive"] }
+tempfile = "3.3"
 chrono = "0.4"
 base64 = "0.13"
 ring = "0.16"
