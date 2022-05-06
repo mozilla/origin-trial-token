@@ -89,14 +89,9 @@ fn sign_data_using_gcloud(data: &[u8], params: &GCloudParams, _verbose: bool) ->
     use std::process::{Command, Stdio};
     use std::io::Write;
 
-    // It's unfortunate that we need this temporary file, see:
-    // https://issuetracker.google.com/229314171
-    let mut in_file = tempfile::NamedTempFile::new().expect("Failed to create temp file for signing");
-    in_file.write_all(data).expect("Failed to write input data to temp file");
-    let in_path = in_file.into_temp_path();
-
-    let process = Command::new("gcloud")
+    let mut process = Command::new("gcloud")
         .stdout(Stdio::piped())
+        .stdin(Stdio::piped())
         .arg("kms")
         .arg("asymmetric-sign")
         .arg("--version")
@@ -110,11 +105,19 @@ fn sign_data_using_gcloud(data: &[u8], params: &GCloudParams, _verbose: bool) ->
         .arg("--digest-algorithm")
         .arg("sha256")
         .arg("--input-file")
-        .arg(&in_path)
+        .arg("/dev/stdin")
         .arg("--signature-file")
         .arg("-")
         .spawn()
         .expect("Failed to spawn gcloud process");
+
+    {
+        let mut stdin = process.stdin.take().expect("Failed to open stdin");
+        let data = data.to_owned();
+        std::thread::spawn(move || {
+            stdin.write_all(&data).expect("Failed to write to stdin");
+        });
+    }
 
     let output = process.wait_with_output().expect("Failed to wait for gcloud");
     assert!(output.status.success(), "Failed to run gcloud sign: {:?}", output);
