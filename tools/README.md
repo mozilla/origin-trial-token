@@ -30,16 +30,39 @@ $ verify <token> -p test-keys/test.pub
 
 ## Google Cloud Verification and Signing
 
-See also https://cloud.google.com/kms/docs/create-validate-signatures
+See also: https://cloud.google.com/kms/docs/create-validate-signatures
+
+### Set up the GCloud project
 
 ```
 $ gcloud auth login
 $ gcloud config set project moz-fx-origin-tr-nonprod-c6af # Or the production one ofc
+```
+
+### Get the public key
+
+```
 $ gcloud kms keys versions get-public-key 1                               \
     --key origin-trials-dev --keyring origin-trials-dev --location global \
     --output-file dev.pub # Or the prod ones ofc
+```
+
+You can then dump the raw key or verify tokens as described above with the
+`dump` command.
+
+### Sign a token using GCloud
+
+```
 $ mktoken --origin https://foobar.org:345 --feature "foobar"              \
     --expiry "$(date --date="09:00 next Fri" -R)"                         \
     --gcloud-sign 1:origin-trials-dev:origin-trials-dev:global
+```
+
+### Verify a token
+
+You just need to verify it with the public key downloaded above as for any other
+key:
+
+```
 $ verify <token> -p dev.pub
 ```
