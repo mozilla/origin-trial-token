@@ -36,15 +36,17 @@ See also: https://cloud.google.com/kms/docs/create-validate-signatures
 
 ```
 $ gcloud auth login
-$ gcloud config set project moz-fx-origin-tr-nonprod-c6af # Or the production one ofc
+$ gcloud config set project moz-fx-origin-tr-nonprod-c6af
+$ # Use the production project if appropriate instead
 ```
 
 ### Get the public key
 
 ```
+$ # Use -prod instead of -dev for the production key
 $ gcloud kms keys versions get-public-key 1                               \
     --key origin-trials-dev --keyring origin-trials-dev --location global \
-    --output-file dev.pub # Or the prod ones ofc
+    --output-file dev.pub
 ```
 
 You can then dump the raw key or verify tokens as described above with the
