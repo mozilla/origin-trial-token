@@ -6,7 +6,7 @@ authors = [
   "Emilio Cobos Álvarez <emilio@crisal.io>",
 ]
 description = "An implementation of the Chrome Origin Trial token format"
-repository = "https://github.com/emilio/origin-trial-token"
+repository = "https://github.com/mozilla/origin-trial-token"
 license = "MPL-2.0"
 
 [lib]
