@@ -42,7 +42,7 @@ struct GCloudParams<'a> {
     location: &'a str,
 }
 
-fn read_gcloud_params(arg: &str) -> Option<GCloudParams> {
+fn read_gcloud_params(arg: &str) -> Option<GCloudParams<'_>> {
     let mut split = arg.split(':');
     Some(GCloudParams {
         version: split.next()?,
@@ -58,13 +58,13 @@ enum SignatureOp<'a> {
 }
 
 impl Args {
-    fn signature_op(&self) -> Option<SignatureOp> {
+    fn signature_op(&self) -> Option<SignatureOp<'_>> {
         if let Some(ref local_path) = self.sign {
             assert!(self.gcloud_sign.is_none(), "Only one sign op at a time");
             return Some(SignatureOp::Local(local_path));
         }
         if let Some(ref gcloud) = self.gcloud_sign {
-            return Some(SignatureOp::GCloud(read_gcloud_params(&gcloud).expect("Invalid GCloud format, read the docs")));
+            return Some(SignatureOp::GCloud(read_gcloud_params(gcloud).expect("Invalid GCloud format, read the docs")));
         }
         None
     }
@@ -163,7 +163,7 @@ fn sign_data_locally(data: &[u8], key_path: &std::path::Path, _verbose: bool) ->
     } else {
         let pair = ring::signature::EcdsaKeyPair::from_pkcs8(&ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING, &pem.contents)
             .expect("Failed to read key");
-        pair.sign(&mut ring::rand::SystemRandom::new(), data).expect("Failed to sign?")
+        pair.sign(&ring::rand::SystemRandom::new(), data).expect("Failed to sign?")
     };
 
     let bytes = signature.as_ref();
@@ -173,7 +173,7 @@ fn sign_data_locally(data: &[u8], key_path: &std::path::Path, _verbose: bool) ->
 
 fn sign_data(data: &[u8], op: SignatureOp, verbose: bool) -> [u8; 64] {
     match op {
-        SignatureOp::Local(ref path) => sign_data_locally(data, path, verbose),
+        SignatureOp::Local(path) => sign_data_locally(data, path, verbose),
         SignatureOp::GCloud(ref params) => sign_data_using_gcloud(data, params, verbose),
     }
 }
