@@ -29,17 +29,21 @@ fn verify_data(public_key: Option<&std::path::Path>, signature: &[u8; 64], data:
         utils::PublicKeyKind::Ed25519 => {
             let public_key = UnparsedPublicKey::new(&signature::ED25519, &key.bytes);
             public_key.verify(data, signature).is_ok()
-        },
+        }
         utils::PublicKeyKind::EcdsaP256 => {
-            let public_key = UnparsedPublicKey::new(&signature::ECDSA_P256_SHA256_FIXED, &key.bytes);
+            let public_key =
+                UnparsedPublicKey::new(&signature::ECDSA_P256_SHA256_FIXED, &key.bytes);
             public_key.verify(data, signature).is_ok()
         }
     }
 }
 
 fn main() {
+    use base64::prelude::*;
     let args = Args::parse();
-    let buffer = base64::decode(&args.token).expect("Expected valid base 64");
+    let buffer = BASE64_STANDARD
+        .decode(&args.token)
+        .expect("Expected valid base 64");
     let token = origin_trial_token::Token::from_buffer(&buffer, |signature, data| {
         verify_data(args.public_key.as_deref(), signature, data)
     })

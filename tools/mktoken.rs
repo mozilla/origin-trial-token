@@ -54,7 +54,7 @@ fn read_gcloud_params(arg: &str) -> Option<GCloudParams<'_>> {
 
 enum SignatureOp<'a> {
     Local(&'a std::path::Path),
-    GCloud(GCloudParams<'a>)
+    GCloud(GCloudParams<'a>),
 }
 
 impl Args {
@@ -64,7 +64,9 @@ impl Args {
             return Some(SignatureOp::Local(local_path));
         }
         if let Some(ref gcloud) = self.gcloud_sign {
-            return Some(SignatureOp::GCloud(read_gcloud_params(gcloud).expect("Invalid GCloud format, read the docs")));
+            return Some(SignatureOp::GCloud(
+                read_gcloud_params(gcloud).expect("Invalid GCloud format, read the docs"),
+            ));
         }
         None
     }
@@ -86,8 +88,8 @@ fn parse_expiry(datetime: &str) -> chrono::DateTime<chrono::FixedOffset> {
 }
 
 fn sign_data_using_gcloud(data: &[u8], params: &GCloudParams, _verbose: bool) -> [u8; 64] {
-    use std::process::{Command, Stdio};
     use std::io::Write;
+    use std::process::{Command, Stdio};
 
     let mut process = Command::new("gcloud")
         .stdout(Stdio::piped())
@@ -119,17 +121,24 @@ fn sign_data_using_gcloud(data: &[u8], params: &GCloudParams, _verbose: bool) ->
         });
     }
 
-    let output = process.wait_with_output().expect("Failed to wait for gcloud");
-    assert!(output.status.success(), "Failed to run gcloud sign: {:?}", output);
+    let output = process
+        .wait_with_output()
+        .expect("Failed to wait for gcloud");
+    assert!(
+        output.status.success(),
+        "Failed to run gcloud sign: {:?}",
+        output
+    );
 
     // Convert from der-encoded to raw.
     let (r, s) = asn1::parse::<'_, _, asn1::ParseError, _>(&output.stdout, |d| {
         d.read_element::<asn1::Sequence>()?.parse(|d| {
             let r = d.read_element::<asn1::BigInt>()?;
             let s = d.read_element::<asn1::BigInt>()?;
-            Ok((r,s))
+            Ok((r, s))
         })
-    }).unwrap();
+    })
+    .unwrap();
 
     fn assert_sane_and_copy_into(i: &asn1::BigInt, slice: &mut [u8]) {
         let bytes = i.as_bytes();
@@ -157,13 +166,20 @@ fn sign_data_locally(data: &[u8], key_path: &std::path::Path, _verbose: bool) ->
         .read_to_end(&mut key_pem)
         .expect("Failed read");
     let pem = pem::parse(&key_pem).expect("Invalid PEM format");
-    assert_eq!(pem.tag, "PRIVATE KEY", "Expected private key");
-    let signature = if let Ok(pair) = ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(&pem.contents) {
+    assert_eq!(pem.tag(), "PRIVATE KEY", "Expected private key");
+    let signature = if let Ok(pair) =
+        ring::signature::Ed25519KeyPair::from_pkcs8_maybe_unchecked(pem.contents())
+    {
         pair.sign(data)
     } else {
-        let pair = ring::signature::EcdsaKeyPair::from_pkcs8(&ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING, &pem.contents)
-            .expect("Failed to read key");
-        pair.sign(&ring::rand::SystemRandom::new(), data).expect("Failed to sign?")
+        let rng = ring::rand::SystemRandom::new();
+        let pair = ring::signature::EcdsaKeyPair::from_pkcs8(
+            &ring::signature::ECDSA_P256_SHA256_FIXED_SIGNING,
+            pem.contents(),
+            &rng,
+        )
+        .expect("Failed to read key");
+        pair.sign(&rng, data).expect("Failed to sign?")
     };
 
     let bytes = signature.as_ref();
@@ -179,6 +195,7 @@ fn sign_data(data: &[u8], op: SignatureOp, verbose: bool) -> [u8; 64] {
 }
 
 fn main() {
+    use base64::prelude::*;
     let args = Args::parse();
     let expiry = parse_expiry(&args.expiry);
     assert!(expiry > chrono::Utc::now(), "Shouldn't expire in the past");
@@ -196,10 +213,9 @@ fn main() {
     };
 
     if let Some(op) = args.signature_op() {
-        let signed_token = token.to_signed_token(|data_to_sign| {
-            sign_data(data_to_sign, op, args.verbose)
-        });
-        println!("{}", base64::encode(signed_token));
+        let signed_token =
+            token.to_signed_token(|data_to_sign| sign_data(data_to_sign, op, args.verbose));
+        println!("{}", BASE64_STANDARD.encode(signed_token));
         return;
     }
 

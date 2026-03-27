@@ -12,7 +12,7 @@ impl PublicKeyKind {
     fn byte_len(&self) -> usize {
         match *self {
             Self::Ed25519 => 32,
-            Self::EcdsaP256 => 65
+            Self::EcdsaP256 => 65,
         }
     }
 }
@@ -31,13 +31,13 @@ pub fn read_public_key(path: &std::path::Path) -> PublicKey {
         .read_to_end(&mut public_key_bytes)
         .expect("Read failed");
     let pem = pem::parse(public_key_bytes).expect("Public key is not in PEM format");
-    assert_eq!(pem.tag, "PUBLIC KEY");
+    assert_eq!(pem.tag(), "PUBLIC KEY");
 
     // id-Ed25519 https://tools.ietf.org/id/draft-ietf-curdle-pkix-06.html#rfc.section.10.1
     let ed25519_ident = asn1::ObjectIdentifier::from_string("1.3.101.112").unwrap();
     let ecpublickey_ident = asn1::ObjectIdentifier::from_string("1.2.840.10045.2.1").unwrap();
     let ecdsa_p256_ident = asn1::ObjectIdentifier::from_string("1.2.840.10045.3.1.7").unwrap();
-    let (kind, bits) = asn1::parse::<'_, _, asn1::ParseError, _>(&pem.contents, |d| {
+    let (kind, bits) = asn1::parse::<'_, _, asn1::ParseError, _>(pem.contents(), |d| {
         d.read_element::<asn1::Sequence>()?.parse(|d| {
             let kind = d.read_element::<asn1::Sequence>()?.parse(|d| {
                 let ident = d.read_element::<asn1::ObjectIdentifier>()?;

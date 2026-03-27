@@ -15,7 +15,7 @@ struct Args {
 
     /// Whether to use the C format for arrays rather than the rust format.
     #[clap(short, long)]
-    c: bool
+    c: bool,
 }
 
 fn main() {
